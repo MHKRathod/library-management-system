@@ -2,6 +2,7 @@ package com.lms.service;
 
 import com.lms.model.Book;
 import com.lms.model.Patron;
+import com.lms.strategy.SearchStrategy;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,7 +17,19 @@ public class Library {
     private final Map<String, Book> books = new HashMap<>();
     private final Map<String, Patron> patrons = new HashMap<>();
 
+    private SearchStrategy searchStrategy;
+
     public Library() { }
+
+    // ---------- Search ----------
+    public void setSearchStrategy(SearchStrategy strategy) {
+        this.searchStrategy = strategy;
+    }
+
+    public List<Book> searchBooks(String query) {
+        if (searchStrategy == null) return List.of();
+        return searchStrategy.search(new ArrayList<>(books.values()), query);
+    }
 
     // ---------- Book management ----------
     public void addBook(Book book) {
@@ -69,33 +82,41 @@ public class Library {
         return new ArrayList<>(patrons.values());
     }
 
-    // ---------- Search functionality ----------
-    public List<Book> searchByTitle(String query) {
-        if (query == null || query.isBlank()) return Collections.emptyList();
-        final String q = query.toLowerCase();
-        return books.values().stream()
-                .filter(b -> b.getTitle().toLowerCase().contains(q))
-                .collect(Collectors.toList());
+    // ---------- Borrow / Return ----------
+    public boolean borrowBook(String patronId, String isbn) {
+        Book book = books.get(isbn);
+        Patron patron = patrons.get(patronId);
+        if (book != null && patron != null && book.isAvailable()) {
+            book.setAvailable(false);
+            book.incrementTimesBorrowed();
+            patron.addToHistory(isbn);  // you should have this method in Patron
+            return true;
+        }
+        return false;
     }
 
-    public List<Book> searchByAuthor(String query) {
-        if (query == null || query.isBlank()) return Collections.emptyList();
-        final String q = query.toLowerCase();
-        return books.values().stream()
-                .filter(b -> b.getAuthor().toLowerCase().contains(q))
-                .collect(Collectors.toList());
+    public boolean returnBook(String patronId, String isbn) {
+        Book book = books.get(isbn);
+        Patron patron = patrons.get(patronId);
+        if (book != null && patron != null && !book.isAvailable()) {
+            book.setAvailable(true);
+            return true;
+        }
+        return false;
     }
 
-    public Optional<Book> searchByIsbn(String isbn) {
-        return getBook(isbn);
-    }
-
-    // ---------- Inventory ----------
+      // ---------- Inventory ----------
     public List<Book> availableBooks() {
-        return books.values().stream().filter(Book::isAvailable).collect(Collectors.toList());
+        return books.values().stream()
+                .filter(Book::isAvailable)
+                .collect(Collectors.toList());
     }
 
-    public List<Book> borrowedBooks() {
-        return books.values().stream().filter(b -> !b.isAvailable()).collect(Collectors.toList());
-    }
+    public List<Book> getMostBorrowedBooks(int limit) {
+    return books.values().stream()
+                .sorted(Comparator.comparingInt(Book::getTimesBorrowed).reversed())
+                .limit(limit)
+                .collect(Collectors.toList());
+}
+
 }

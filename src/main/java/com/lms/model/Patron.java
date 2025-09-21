@@ -6,14 +6,13 @@ import java.util.List;
 
 /**
  * Represents a library patron (member).
- * Tracks current borrowed ISBNs, reservations and historical borrows.
+ * Tracks borrowed books, reservations, and borrowing history.
  */
 public class Patron {
     private final String id;
     private String name;
     private String email;
 
-    // lists hold ISBN strings
     private final List<String> borrowedIsbns = new ArrayList<>();
     private final List<String> reservationIsbns = new ArrayList<>();
     private final List<String> historyIsbns = new ArrayList<>();
@@ -32,6 +31,11 @@ public class Patron {
     public void setName(String name) { this.name = name == null ? "" : name.trim(); }
     public void setEmail(String email) { this.email = email == null ? "" : email.trim(); }
 
+
+    public void addToHistory(String isbn) {
+    historyIsbns.add(isbn);
+}
+
     // Borrowing operations
     public void borrow(String isbn) {
         if (!borrowedIsbns.contains(isbn)) {
@@ -39,6 +43,7 @@ public class Patron {
         }
         historyIsbns.add(isbn);
     }
+
     public void returned(String isbn) {
         borrowedIsbns.remove(isbn);
     }
@@ -47,18 +52,18 @@ public class Patron {
     public void reserve(String isbn) {
         if (!reservationIsbns.contains(isbn)) reservationIsbns.add(isbn);
     }
+
     public void cancelReservation(String isbn) {
         reservationIsbns.remove(isbn);
     }
 
-    // Read-only views to preserve encapsulation
-    public List<String> getBorrowedIsbns() {
-        return Collections.unmodifiableList(borrowedIsbns);
-    }
-    public List<String> getReservationIsbns() {
-        return Collections.unmodifiableList(reservationIsbns);
-    }
-    public List<String> getHistoryIsbns() {
+    // Read-only views
+    public List<String> getBorrowedIsbns() { return Collections.unmodifiableList(borrowedIsbns); }
+    public List<String> getReservationIsbns() { return Collections.unmodifiableList(reservationIsbns); }
+    public List<String> getHistoryIsbns() { return Collections.unmodifiableList(historyIsbns); }
+
+    // New helper for RecommendationService
+    public List<String> getBorrowingHistory() {
         return Collections.unmodifiableList(historyIsbns);
     }
 
